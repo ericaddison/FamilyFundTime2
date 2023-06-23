@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "187438850032",
+    "project_id": "familyfundtime",
+    "storage_bucket": "familyfundtime.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187438850032:android:e59ae884b584ed64138735",
+        "android_client_info": {
+          "package_name": "com.lutortech.familyfundtime"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "187438850032-lmm931ohm2kdkk04h4g8kop4ltnng15f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp1sE8NbAwaItOa_zgOc1UAXMqcBeZ6H0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "187438850032-lmm931ohm2kdkk04h4g8kop4ltnng15f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
