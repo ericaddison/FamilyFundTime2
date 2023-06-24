@@ -13,4 +13,5 @@ interface FamilyOperations {
     /** Returns the ids of the Families user is a part of */
     suspend fun getFamiliesForUser(userId: String): Set<String>
 
+    suspend fun addUserToFamily(userId: String, familyId: String)
 }

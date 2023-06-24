@@ -36,8 +36,6 @@ import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.family.Family
 import com.lutortech.familyfundtime.model.family.FamilyOperations
 import com.lutortech.familyfundtime.model.family.FirebaseFamilyOperations
-import com.lutortech.familyfundtime.model.familymember.FamilyMemberOperations
-import com.lutortech.familyfundtime.model.familymember.FirebaseFamilyMemberOperations
 import com.lutortech.familyfundtime.model.signin.FirebaseSignInOperations
 import com.lutortech.familyfundtime.model.signin.SignInOperations
 import com.lutortech.familyfundtime.model.user.FirebaseUserOperations
@@ -52,7 +50,6 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val signInOperations: SignInOperations<*> = FirebaseSignInOperations()
-    private val familyMemberOperations: FamilyMemberOperations = FirebaseFamilyMemberOperations()
     private val userOperations: UserOperations = FirebaseUserOperations()
     private val familyOperations: FamilyOperations = FirebaseFamilyOperations()
 
@@ -82,23 +79,6 @@ class MainActivity : ComponentActivity() {
                         Log.d(LOG_TAG, "click!")
                         signInOperations.signOut()
                         updateUser()
-                    }
-
-                    GrayButton(text = "Find all FamilyMembers for User") {
-                        Log.d(LOG_TAG, "click!")
-
-                        if (user.value == null) {
-                            Log.i(LOG_TAG, "Cannot get family member when user is not signed in")
-                        } else {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                val familyMembers = user.value?.let {
-                                    familyMemberOperations.getFamilyMembers(it.id())
-                                }?.map {}
-
-                                Log.i(LOG_TAG, "Found family members: $familyMembers")
-
-                            }
-                        }
                     }
 
                     GrayButton(text = "Store User") {
@@ -144,12 +124,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    GrayButton(text = "Add Fake User To Family") {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            familyOperations.addUserToFamily("123", "4xBpV0sB8objiRytXo8S")
+                        }
+                    }
 
                     UserInfoCard(user, userFamilies)
                     AddUserToFamilyDialog(
                         openDialog,
                         user,
-                        familyMemberOperations,
                         familyOperations
                     )
                 }
@@ -223,7 +207,6 @@ fun GrayButton(text: String, onClick: () -> Unit) {
 fun AddUserToFamilyDialog(
     openDialog: MutableState<Boolean>,
     user: MutableState<User?>,
-    familyMemberOperations: FamilyMemberOperations,
     familyOperations: FamilyOperations
 ) {
     val myUser = remember { user }
@@ -253,10 +236,7 @@ fun AddUserToFamilyDialog(
                                 // Check that family exists
                                 val familyId = "M3Yl3xilunkucM4h4Buf" //textState.value.text
                                 if (familyOperations.familyExists(familyId)) {
-                                    familyMemberOperations.getOrCreateFamilyMember(
-                                        realUser,
-                                        familyId
-                                    )
+                                    familyOperations.addUserToFamily(familyId, realUser.id())
                                 } else {
                                     Log.i(LOG_TAG, "No family found with Id [$familyId]")
                                 }

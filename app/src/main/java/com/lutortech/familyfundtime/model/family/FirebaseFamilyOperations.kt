@@ -1,10 +1,11 @@
 package com.lutortech.familyfundtime.model.family
 
 import android.util.Log
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.user.User
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.tasks.await
 
 class FirebaseFamilyOperations : FamilyOperations {
@@ -21,9 +22,11 @@ class FirebaseFamilyOperations : FamilyOperations {
 
         val ownerData = mapOf(
             FIELD_USER_ID to owner.id(),
+            FIELD_IS_OWNER to true,
             FIELD_IS_ADMIN to true
         )
-        db.collection("$COLLECTION_FAMILIES/${familyDocument.id}/$COLLECTION_MEMBERS").add(ownerData).await()
+        db.collection("$COLLECTION_FAMILIES/${familyDocument.id}/$COLLECTION_MEMBERS")
+            .document(owner.id()).set(ownerData).await()
 
         return familyDocument.id
     }
@@ -34,8 +37,23 @@ class FirebaseFamilyOperations : FamilyOperations {
     }
 
     override suspend fun getFamiliesForUser(userId: String): Set<String> {
-        val result = db.collectionGroup(COLLECTION_MEMBERS).whereEqualTo(FIELD_USER_ID, userId).get().await()
-        return  result.documents.map{it.reference.parent.parent!!.id}.toSet()
+        val result =
+            db.collectionGroup(COLLECTION_MEMBERS).whereEqualTo(FIELD_USER_ID, userId).get().await()
+        return result.documents.map { it.reference.parent.parent!!.id }.toSet()
+    }
+
+    override suspend fun addUserToFamily(userId: String, familyId: String) {
+        if (!familyExists(familyId)) {
+            throw IllegalArgumentException("Family does not exist: [$familyId]")
+        }
+
+        val memberData = mapOf(
+            FIELD_USER_ID to userId,
+            FIELD_IS_OWNER to false,
+            FIELD_IS_ADMIN to false
+        )
+        db.collection("$COLLECTION_FAMILIES/$familyId/$COLLECTION_MEMBERS").document(userId)
+            .set(memberData, SetOptions.mergeFields())
     }
 
     companion object {
@@ -43,6 +61,7 @@ class FirebaseFamilyOperations : FamilyOperations {
         private const val COLLECTION_MEMBERS = "members"
         private const val FIELD_USER_ID = "userId"
         private const val FIELD_IS_ADMIN = "isAdmin"
+        private const val FIELD_IS_OWNER = "isOwner"
     }
 
 }
