@@ -1,11 +1,16 @@
 package com.lutortech.familyfundtime.model.family
 
-import com.lutortech.familyfundtime.model.familymember.FamilyMember
+import com.lutortech.familyfundtime.model.user.User
 
 interface FamilyOperations {
 
-    fun getFamily(familyId: String): Family?
+    /** Creates a new Family entry and returns the Family Id. */
+    suspend fun createFamily(owner: User): String
 
-    fun getFamilyMember(userId: String): FamilyMember?
+    /** Gets a Family for the given Id. */
+    suspend fun familyExists(familyId: String): Boolean
+
+    /** Returns the ids of the Families user is a part of */
+    suspend fun getFamiliesForUser(userId: String): Set<String>
 
 }

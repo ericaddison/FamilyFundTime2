@@ -7,4 +7,10 @@ interface User {
     fun displayName(): String?
 
     fun email(): String?
+
+    fun toMap() = mapOf(
+        "id" to id(),
+        "displayName" to displayName(),
+        "email" to email()
+    )
 }

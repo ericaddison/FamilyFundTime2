@@ -1,6 +1,5 @@
-package com.lutortech.familyfundtime.model.user.signin
+package com.lutortech.familyfundtime.model.signin
 
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.util.Log
 import androidx.activity.ComponentActivity

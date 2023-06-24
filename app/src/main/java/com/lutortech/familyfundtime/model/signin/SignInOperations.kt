@@ -1,4 +1,4 @@
-package com.lutortech.familyfundtime.model.user.signin
+package com.lutortech.familyfundtime.model.signin
 
 import androidx.activity.ComponentActivity
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
