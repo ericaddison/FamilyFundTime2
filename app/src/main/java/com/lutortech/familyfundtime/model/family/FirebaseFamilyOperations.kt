@@ -10,6 +10,7 @@ import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin
 import com.lutortech.familyfundtime.model.user.User
 import kotlinx.coroutines.tasks.await
 import java.lang.IllegalStateException
+import java.time.Instant
 
 class FirebaseFamilyOperations : FamilyOperations {
 
@@ -18,9 +19,7 @@ class FirebaseFamilyOperations : FamilyOperations {
     override suspend fun createFamily(owner: User): String {
 
         // Create the new Family
-        val familyData = mapOf<String, Any>(
-            "creatorUserId" to owner.id
-        )
+        val familyData = Family.dbDataMap(owner.id)
         val familyDocument = db.collection(Family.COLLECTION).add(familyData).await()
 
         val ownerData = FamilyMember.dbDataMap(owner.id, isOwner = true, isAdmin = true)
@@ -97,7 +96,14 @@ class FirebaseFamilyOperations : FamilyOperations {
         val userId = this.getString(FamilyMember.FIELD_USER_ID) ?: return null
         val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER) ?: return null
         val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN) ?: return null
-        return FamilyMember(this.id, userId, isOwner, isAdmin)
+        val createdTimestamp = this.getLong(FamilyMember.FIELD_CREATED_TIMESTAMP) ?: return null
+        return FamilyMember(
+            this.id,
+            userId,
+            isOwner,
+            isAdmin,
+            Instant.ofEpochMilli(createdTimestamp)
+        )
     }
 
     companion object {
