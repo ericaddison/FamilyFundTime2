@@ -1,12 +1,15 @@
 package com.lutortech.familyfundtime.model.family
 
 import android.util.Log
-import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.lutortech.familyfundtime.Constants.LOG_TAG
+import com.lutortech.familyfundtime.model.family.member.FamilyMember
+import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin
 import com.lutortech.familyfundtime.model.user.User
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.tasks.await
+import java.lang.IllegalStateException
 
 class FirebaseFamilyOperations : FamilyOperations {
 
@@ -16,52 +19,91 @@ class FirebaseFamilyOperations : FamilyOperations {
 
         // Create the new Family
         val familyData = mapOf<String, Any>(
-            "creatorUserId" to owner.id()
+            "creatorUserId" to owner.id
         )
-        val familyDocument = db.collection(COLLECTION_FAMILIES).add(familyData).await()
+        val familyDocument = db.collection(Family.COLLECTION).add(familyData).await()
 
-        val ownerData = mapOf(
-            FIELD_USER_ID to owner.id(),
-            FIELD_IS_OWNER to true,
-            FIELD_IS_ADMIN to true
-        )
-        db.collection("$COLLECTION_FAMILIES/${familyDocument.id}/$COLLECTION_MEMBERS")
-            .document(owner.id()).set(ownerData).await()
+        val ownerData = FamilyMember.dbDataMap(owner.id, isOwner = true, isAdmin = true)
+        val familyMember =
+            db.collection("${Family.COLLECTION}/${familyDocument.id}/${FamilyMember.COLLECTION}")
+                .add(ownerData).await()
+
+        createDefaultMoneyBin(familyDocument.id, familyMember.id)
 
         return familyDocument.id
     }
 
     override suspend fun familyExists(familyId: String): Boolean {
-        val doc = db.document("$COLLECTION_FAMILIES/$familyId").get().await()
+        val doc = db.document("${Family.COLLECTION}/$familyId").get().await()
         return doc.exists()
     }
 
     override suspend fun getFamiliesForUser(userId: String): Set<String> {
         val result =
-            db.collectionGroup(COLLECTION_MEMBERS).whereEqualTo(FIELD_USER_ID, userId).get().await()
+            db.collectionGroup(FamilyMember.COLLECTION)
+                .whereEqualTo(FamilyMember.FIELD_USER_ID, userId).get().await()
         return result.documents.map { it.reference.parent.parent!!.id }.toSet()
     }
 
-    override suspend fun addUserToFamily(userId: String, familyId: String) {
+    override suspend fun addUserToFamily(userId: String, familyId: String): FamilyMember {
         if (!familyExists(familyId)) {
             throw IllegalArgumentException("Family does not exist: [$familyId]")
         }
 
-        val memberData = mapOf(
-            FIELD_USER_ID to userId,
-            FIELD_IS_OWNER to false,
-            FIELD_IS_ADMIN to false
+        // Check if this user already exists in this family
+        val familyMember = getFamilyMemberFromFamily(familyId, userId)
+        if (familyMember != null) {
+            Log.i(
+                LOG_TAG,
+                "User [$userId] is already a member of family [$familyId], familyMemberId = [${familyMember.id}]"
+            )
+            return familyMember
+        }
+
+        // add the user to the family by creating a new familymember entry with default data
+        val memberData = FamilyMember.dbDataMap(userId, isOwner = false, isAdmin = false)
+        val newFamilyMember =
+            db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}")
+                .add(memberData).await()
+
+        // create a default money bin for the user
+        createDefaultMoneyBin(familyId, newFamilyMember.id)
+
+        return newFamilyMember.get().await().toFamilyMember()
+            ?: throw IllegalStateException("Failed to retrieve newly created family member")
+    }
+
+    private suspend fun createDefaultMoneyBin(familyId: String, familyMemberId: String) {
+        val moneyBinData = MoneyBin.dbDataMap(
+            MONEYBIN_NAME_DEFAULT,
+            MONEYBIN_NOTE_DEFAULT,
+            MONEYBIN_BALANCE_DEFAULT
         )
-        db.collection("$COLLECTION_FAMILIES/$familyId/$COLLECTION_MEMBERS").document(userId)
-            .set(memberData, SetOptions.mergeFields())
+        db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}/${familyMemberId}/${MoneyBin.COLLECTION}")
+            .add(moneyBinData).await()
+    }
+
+    private suspend fun getFamilyMemberFromFamily(familyId: String, userId: String) =
+        db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}")
+            .whereEqualTo(FamilyMember.FIELD_USER_ID, userId)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+            ?.toFamilyMember()
+
+
+    private fun DocumentSnapshot.toFamilyMember(): FamilyMember? {
+        val userId = this.getString(FamilyMember.FIELD_USER_ID) ?: return null
+        val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER) ?: return null
+        val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN) ?: return null
+        return FamilyMember(this.id, userId, isOwner, isAdmin)
     }
 
     companion object {
-        private const val COLLECTION_FAMILIES = "families"
-        private const val COLLECTION_MEMBERS = "members"
-        private const val FIELD_USER_ID = "userId"
-        private const val FIELD_IS_ADMIN = "isAdmin"
-        private const val FIELD_IS_OWNER = "isOwner"
+        private const val MONEYBIN_NAME_DEFAULT = "main"
+        private const val MONEYBIN_NOTE_DEFAULT = "This is your main MoneyBin!"
+        private const val MONEYBIN_BALANCE_DEFAULT = 0.0
     }
 
 }

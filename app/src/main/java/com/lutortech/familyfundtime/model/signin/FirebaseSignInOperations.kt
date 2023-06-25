@@ -9,7 +9,6 @@ import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.auth.FirebaseAuth
-import com.lutortech.familyfundtime.model.user.FirebaseUser
 import com.lutortech.familyfundtime.model.user.User
 
 /**
@@ -27,7 +26,10 @@ class FirebaseSignInOperations : SignInOperations<FirebaseAuthUIAuthenticationRe
         }
     }
 
-    override fun init(sourceActivity: ComponentActivity, onSignInCallback: (FirebaseAuthUIAuthenticationResult) -> Unit) {
+    override fun init(
+        sourceActivity: ComponentActivity,
+        onSignInCallback: (FirebaseAuthUIAuthenticationResult) -> Unit
+    ) {
         signInLauncher =
             sourceActivity.registerForActivityResult(FirebaseAuthUIActivityResultContract()) { res: FirebaseAuthUIAuthenticationResult ->
                 onSignInCallback.invoke(res)
@@ -59,6 +61,7 @@ class FirebaseSignInOperations : SignInOperations<FirebaseAuthUIAuthenticationRe
         auth.signOut()
     }
 
-    override fun currentUser(): User? = auth.currentUser?.let { FirebaseUser(it) }
+    override fun currentUser(): User? =
+        auth.currentUser?.let { User(it.uid, it.displayName, it.email) }
 
 }

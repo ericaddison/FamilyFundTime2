@@ -1,12 +1,10 @@
 package com.lutortech.familyfundtime.model.family
 
-import com.lutortech.familyfundtime.model.user.User
+import com.lutortech.familyfundtime.model.family.member.FamilyMember
 
-interface Family {
+data class Family(val id: String, val familyMembers: Set<FamilyMember>) {
 
-    fun id(): String
-
-    fun familyMembers(): Set<User>
-
-
+    companion object {
+        const val COLLECTION = "families"
+    }
 }

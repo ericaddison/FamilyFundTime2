@@ -100,9 +100,11 @@ class MainActivity : ComponentActivity() {
 
                     GrayButton(text = "Create Family") {
                         CoroutineScope(Dispatchers.IO).launch {
-                            val newFamilyId = signInOperations.currentUser()
-                                ?.let { familyOperations.createFamily(it) } ?: "NOT SIGNED IN"
-                            Log.i(LOG_TAG, "Family Id [$newFamilyId]")
+                            signInOperations.currentUser()
+                                ?.also {user ->
+                                    val newFamilyId = familyOperations.createFamily(user)
+                                    Log.i(LOG_TAG, "New Family Id [$newFamilyId]")
+                                } ?: "NOT SIGNED IN"
                         }
                     }
 
@@ -113,10 +115,10 @@ class MainActivity : ComponentActivity() {
                     GrayButton(text = "Get Families For User") {
                         CoroutineScope(Dispatchers.IO).launch {
                             user.value?.also {
-                                val familyIds = familyOperations.getFamiliesForUser(it.id())
+                                val familyIds = familyOperations.getFamiliesForUser(it.id)
                                 Log.i(
                                     LOG_TAG,
-                                    "Found [${familyIds.size}] families for user [${it.id()}]: $familyIds }"
+                                    "Found [${familyIds.size}] families for user [${it.id}]: $familyIds }"
                                 )
                                 userFamilies.value = familyIds
                             }
@@ -127,6 +129,13 @@ class MainActivity : ComponentActivity() {
                     GrayButton(text = "Add Fake User To Family") {
                         CoroutineScope(Dispatchers.IO).launch {
                             familyOperations.addUserToFamily("123", "4xBpV0sB8objiRytXo8S")
+                        }
+                    }
+
+                    GrayButton(text = "Get All Users") {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val allUsers = userOperations.getAllUsers()
+                            Log.i(LOG_TAG, "all users: ${allUsers.map { it.displayName} }")
                         }
                     }
 
@@ -147,7 +156,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
-        val response = result.idpResponse
+//        val response = result.idpResponse
         if (result.resultCode == RESULT_OK) {
             // Successfully signed in
             updateUser()
@@ -177,9 +186,9 @@ fun UserInfoCard(user: MutableState<User?>, userFamilies: MutableState<Set<Strin
         Column(
             modifier = Modifier.padding(15.dp)
         ) {
-            Text("Email: ${myUser.value?.email()}", color = Color.Cyan)
-            Text("Name: ${myUser.value?.displayName()}", color = Color.Cyan)
-            Text("User Id: ${myUser.value?.id()}", color = Color.Cyan)
+            Text("Email: ${myUser.value?.email}", color = Color.Cyan)
+            Text("Name: ${myUser.value?.displayName}", color = Color.Cyan)
+            Text("User Id: ${myUser.value?.id}", color = Color.Cyan)
             Text("Families: ${myFamilies.value}", color = Color.Cyan)
         }
     }
@@ -188,7 +197,7 @@ fun UserInfoCard(user: MutableState<User?>, userFamilies: MutableState<Set<Strin
 @Composable
 fun UserFamiliesCard(families: Set<Family>) {
     families.forEach {
-        Text("Family [${it.id()}]")
+        Text("Family [${it.id}]")
     }
 }
 
@@ -236,7 +245,7 @@ fun AddUserToFamilyDialog(
                                 // Check that family exists
                                 val familyId = "M3Yl3xilunkucM4h4Buf" //textState.value.text
                                 if (familyOperations.familyExists(familyId)) {
-                                    familyOperations.addUserToFamily(familyId, realUser.id())
+                                    familyOperations.addUserToFamily(familyId, realUser.id)
                                 } else {
                                     Log.i(LOG_TAG, "No family found with Id [$familyId]")
                                 }

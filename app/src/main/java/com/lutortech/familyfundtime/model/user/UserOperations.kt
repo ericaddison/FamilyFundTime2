@@ -4,4 +4,7 @@ interface UserOperations {
 
     suspend fun storeUser(user: User): Boolean
 
+    /** TODO: paginate this. */
+    suspend fun getAllUsers(): Set<User>
+
 }
