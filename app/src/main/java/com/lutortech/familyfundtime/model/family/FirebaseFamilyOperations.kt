@@ -9,100 +9,133 @@ import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin
 import com.lutortech.familyfundtime.model.user.User
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import java.lang.IllegalStateException
 import java.time.Instant
+import kotlin.coroutines.coroutineContext
 
 class FirebaseFamilyOperations : FamilyOperations {
 
     private val db = Firebase.firestore
 
-    override suspend fun createFamily(owner: User): String {
+    override suspend fun createFamily(owner: User): Family {
 
-        // Create the new Family
-        val familyData = Family.dbDataMap(owner.id)
-        val familyDocument = db.collection(Family.COLLECTION).add(familyData).await()
+        val familyRef = db.collection(Family.COLLECTION).document()
+        val familyMemberRef = db.collection(
+            "${familyRef.path}/${FamilyMember.COLLECTION}"
+        ).document(owner.id)
+        val moneyBinRef = db.collection("${familyMemberRef.path}/${MoneyBin.COLLECTION}").document()
 
-        val ownerData = FamilyMember.dbDataMap(owner.id, isOwner = true, isAdmin = true)
-        val familyMember =
-            db.collection("${Family.COLLECTION}/${familyDocument.id}/${FamilyMember.COLLECTION}")
-                .add(ownerData).await()
+        db.runTransaction { transaction ->
 
-        createDefaultMoneyBin(familyDocument.id, familyMember.id)
+            // Create the new Family
+            val familyData = Family.dbDataMap(owner.id)
+            transaction.set(familyRef, familyData)
 
-        return familyDocument.id
+            val ownerData = FamilyMember.dbDataMap(
+                owner.id,
+                isOwner = true,
+                isAdmin = true
+            )
+            transaction.set(familyMemberRef, ownerData)
+            transaction.set(moneyBinRef, defaultMoneyBinData())
+        }.await()
+        return familyRef.get().await().toFamily()
     }
 
-    override suspend fun familyExists(familyId: String): Boolean {
-        val doc = db.document("${Family.COLLECTION}/$familyId").get().await()
-        return doc.exists()
+    private fun DocumentSnapshot.toFamily(): Family {
+        val creator = getString(Family.FIELD_CREATOR_USER_ID)
+            ?: throw IllegalStateException("No creator id for family [${reference.path}]")
+        val createdTimestamp =
+            getLong(Family.FIELD_CREATED_TIMESTAMP)?.let { Instant.ofEpochMilli(it) }
+                ?: throw IllegalStateException("No created timestamp for family [{reference.path}]")
+        return Family(
+            id,
+            reference.path,
+            creator,
+            createdTimestamp
+        )
     }
 
-    override suspend fun getFamiliesForUser(userId: String): Set<String> {
+    // This is probably not very performant, but also there should usually not be many families
+    // per user.
+    override suspend fun getFamiliesForUser(user: User): Set<Family> {
         val result =
             db.collectionGroup(FamilyMember.COLLECTION)
-                .whereEqualTo(FamilyMember.FIELD_USER_ID, userId).get().await()
-        return result.documents.map { it.reference.parent.parent!!.id }.toSet()
+                .whereEqualTo(FamilyMember.FIELD_USER_ID, user.id).get().await()
+        val familyPaths = result.documents.map { it.reference.parent.parent?.path }
+
+        return familyPaths.filterNotNull()
+            .map { path -> coroutineScope { async { db.document(path).get().await().toFamily() } } }
+            .awaitAll().toSet()
     }
 
-    override suspend fun addUserToFamily(userId: String, familyId: String): FamilyMember {
-        if (!familyExists(familyId)) {
-            throw IllegalArgumentException("Family does not exist: [$familyId]")
-        }
+    override suspend fun getOrCreateFamilyMember(user: User, family: Family): FamilyMember {
+        val familyMemberRef = db.collection(
+            "${family.url}/${FamilyMember.COLLECTION}"
+        ).document(user.id)
+        val moneyBinRef = db.collection("${familyMemberRef.path}/${MoneyBin.COLLECTION}").document()
 
-        // Check if this user already exists in this family
-        val familyMember = getFamilyMemberFromFamily(familyId, userId)
-        if (familyMember != null) {
-            Log.i(
-                LOG_TAG,
-                "User [$userId] is already a member of family [$familyId], familyMemberId = [${familyMember.id}]"
-            )
-            return familyMember
-        }
-
-        // add the user to the family by creating a new familymember entry with default data
-        val memberData = FamilyMember.dbDataMap(userId, isOwner = false, isAdmin = false)
-        val newFamilyMember =
-            db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}")
-                .add(memberData).await()
-
-        // create a default money bin for the user
-        createDefaultMoneyBin(familyId, newFamilyMember.id)
-
-        return newFamilyMember.get().await().toFamilyMember()
-            ?: throw IllegalStateException("Failed to retrieve newly created family member")
+        db.runTransaction { transaction ->
+            // Check if this user already exists in this family
+            val existingFamilyMember = transaction.get(familyMemberRef)
+            if (existingFamilyMember.exists()) {
+                Log.i(
+                    LOG_TAG,
+                    "User [${user.id}] is already a member of family [${family.id}], " +
+                            "familyMemberId = [${existingFamilyMember}]"
+                )
+            } else {
+                // add the user to the family by creating a new familymember entry with default data
+                val memberData =
+                    FamilyMember.dbDataMap(
+                        user.id,
+                        isOwner = false,
+                        isAdmin = false
+                    )
+                transaction.set(familyMemberRef, memberData)
+                transaction.set(moneyBinRef, defaultMoneyBinData())
+            }
+        }.await()
+        return familyMemberRef.get().await().toFamilyMember()
     }
 
-    private suspend fun createDefaultMoneyBin(familyId: String, familyMemberId: String) {
-        val moneyBinData = MoneyBin.dbDataMap(
+    private fun defaultMoneyBinData() =
+        MoneyBin.dbDataMap(
             MONEYBIN_NAME_DEFAULT,
             MONEYBIN_NOTE_DEFAULT,
             MONEYBIN_BALANCE_DEFAULT
         )
-        db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}/${familyMemberId}/${MoneyBin.COLLECTION}")
-            .add(moneyBinData).await()
-    }
 
-    private suspend fun getFamilyMemberFromFamily(familyId: String, userId: String) =
-        db.collection("${Family.COLLECTION}/$familyId/${FamilyMember.COLLECTION}")
+    private fun getFamilyMemberFromFamily(familyPath: String, userId: String) =
+        db.collection("$familyPath/${FamilyMember.COLLECTION}")
             .whereEqualTo(FamilyMember.FIELD_USER_ID, userId)
             .get()
-            .await()
+            .result
             .documents
             .firstOrNull()
             ?.toFamilyMember()
 
 
-    private fun DocumentSnapshot.toFamilyMember(): FamilyMember? {
-        val userId = this.getString(FamilyMember.FIELD_USER_ID) ?: return null
-        val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER) ?: return null
-        val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN) ?: return null
-        val createdTimestamp = this.getLong(FamilyMember.FIELD_CREATED_TIMESTAMP) ?: return null
+    private fun DocumentSnapshot.toFamilyMember(): FamilyMember {
+        val userId = this.getString(FamilyMember.FIELD_USER_ID)
+            ?: throw IllegalStateException("Field USER_ID not found for family member [${reference.path}]")
+        val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER)
+            ?: throw IllegalStateException("Field IS_OWNER not found for family member [${reference.path}]")
+        val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN)
+            ?: throw IllegalStateException("Field IS_ADMIN not found for family member [${reference.path}]")
+        val createdTimestamp = this.getLong(FamilyMember.FIELD_CREATED_TIMESTAMP)
+            ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for family member [${reference.path}]")
         return FamilyMember(
             this.id,
+            this.reference.path,
+            Instant.ofEpochMilli(createdTimestamp),
             userId,
             isOwner,
-            isAdmin,
-            Instant.ofEpochMilli(createdTimestamp)
+            isAdmin
         )
     }
 
@@ -113,3 +146,4 @@ class FirebaseFamilyOperations : FamilyOperations {
     }
 
 }
+

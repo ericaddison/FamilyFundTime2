@@ -4,17 +4,18 @@ import java.time.Instant
 
 data class FamilyMember(
     val id: String,
+    val url: String,
+    val createdTimestamp: Instant,
     val userId: String,
     val isOwner: Boolean,
-    val isAdmin: Boolean,
-    val createdTimestamp: Instant
+    val isAdmin: Boolean
 ) {
 
     companion object {
         const val COLLECTION = "members"
-        const val FIELD_USER_ID = "userId"
-        const val FIELD_IS_ADMIN = "isAdmin"
-        const val FIELD_IS_OWNER = "isOwner"
+        const val FIELD_USER_ID = "user_id"
+        const val FIELD_IS_ADMIN = "is_admin"
+        const val FIELD_IS_OWNER = "is_owner"
         const val FIELD_CREATED_TIMESTAMP = "created_timestamp"
 
         fun dbDataMap(userId: String, isOwner: Boolean, isAdmin: Boolean) =

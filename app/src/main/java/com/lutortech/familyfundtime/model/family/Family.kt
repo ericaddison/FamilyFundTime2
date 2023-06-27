@@ -1,13 +1,17 @@
 package com.lutortech.familyfundtime.model.family
 
-import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import java.time.Instant
 
-data class Family(val id: String, val familyMembers: Set<FamilyMember>, val createdTimestamp: Instant) {
+data class Family(
+    val id: String,
+    val url: String,
+    val creatorId: String,
+    val createdTimestamp: Instant,
+) {
 
     companion object {
         const val COLLECTION = "families"
-        const val FIELD_CREATOR_USER_ID = "creatorUserId"
+        const val FIELD_CREATOR_USER_ID = "creator_user_id"
         const val FIELD_CREATED_TIMESTAMP = "created_timestamp"
 
         fun dbDataMap(creatorId: String) =

@@ -22,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -36,6 +35,10 @@ import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.family.Family
 import com.lutortech.familyfundtime.model.family.FamilyOperations
 import com.lutortech.familyfundtime.model.family.FirebaseFamilyOperations
+import com.lutortech.familyfundtime.model.family.member.moneybin.FirebaseMoneyBinOperations
+import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBinOperations
+import com.lutortech.familyfundtime.model.family.transaction.FirebaseTransactionOperations
+import com.lutortech.familyfundtime.model.family.transaction.TransactionOperations
 import com.lutortech.familyfundtime.model.signin.FirebaseSignInOperations
 import com.lutortech.familyfundtime.model.signin.SignInOperations
 import com.lutortech.familyfundtime.model.user.FirebaseUserOperations
@@ -52,6 +55,8 @@ class MainActivity : ComponentActivity() {
     private val signInOperations: SignInOperations<*> = FirebaseSignInOperations()
     private val userOperations: UserOperations = FirebaseUserOperations()
     private val familyOperations: FamilyOperations = FirebaseFamilyOperations()
+    private val moneyBinOperations: MoneyBinOperations = FirebaseMoneyBinOperations()
+    private val transactionOperations: TransactionOperations = FirebaseTransactionOperations()
 
     private val user: MutableState<User?> = mutableStateOf(null)
     private val userFamilies: MutableState<Set<String>> = mutableStateOf(setOf())
@@ -101,7 +106,7 @@ class MainActivity : ComponentActivity() {
                     GrayButton(text = "Create Family") {
                         CoroutineScope(Dispatchers.IO).launch {
                             signInOperations.currentUser()
-                                ?.also {user ->
+                                ?.also { user ->
                                     val newFamilyId = familyOperations.createFamily(user)
                                     Log.i(LOG_TAG, "New Family Id [$newFamilyId]")
                                 } ?: "NOT SIGNED IN"
@@ -114,37 +119,87 @@ class MainActivity : ComponentActivity() {
 
                     GrayButton(text = "Get Families For User") {
                         CoroutineScope(Dispatchers.IO).launch {
-                            user.value?.also {
-                                val familyIds = familyOperations.getFamiliesForUser(it.id)
+                            user.value?.also { realUser ->
+                                val families = familyOperations.getFamiliesForUser(realUser)
                                 Log.i(
                                     LOG_TAG,
-                                    "Found [${familyIds.size}] families for user [${it.id}]: $familyIds }"
+                                    "Found [${families.size}] families for user [${realUser.id}]: $families }"
                                 )
-                                userFamilies.value = familyIds
+                                userFamilies.value = families.map { it.id }.toSet()
                             }
 
-                        }
-                    }
-
-                    GrayButton(text = "Add Fake User To Family") {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            familyOperations.addUserToFamily("123", "4xBpV0sB8objiRytXo8S")
                         }
                     }
 
                     GrayButton(text = "Get All Users") {
                         CoroutineScope(Dispatchers.IO).launch {
                             val allUsers = userOperations.getAllUsers()
-                            Log.i(LOG_TAG, "all users: ${allUsers.map { it.displayName} }")
+                            Log.i(LOG_TAG, "all users: ${allUsers.map { it.displayName }}")
+                        }
+                    }
+
+                    GrayButton(text = "Get moneybins for family member") {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // get a family member for the current user
+                            user.value?.also { realUser ->
+                                familyOperations.getFamiliesForUser(realUser).firstOrNull()
+                                    ?.also { family ->
+                                        val familyMember = familyOperations.getOrCreateFamilyMember(
+                                            realUser,
+                                            family
+                                        )
+                                        val moneyBins =
+                                            moneyBinOperations.getMoneyBinsForFamilyMember(
+                                                familyMember
+                                            )
+                                        Log.i(
+                                            LOG_TAG,
+                                            "Found moneybins for family member: $moneyBins"
+                                        )
+                                    } ?: Log.i(
+                                    LOG_TAG,
+                                    "No families found for user [${user.value?.id}"
+                                )
+                            } ?: Log.i(LOG_TAG, "User not logged in")
+
+
+                        }
+                    }
+
+                    GrayButton(text = "Add $5 family member") {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            // get a family member for the current user
+                            user.value?.also { realUser ->
+                                familyOperations.getFamiliesForUser(realUser).firstOrNull()
+                                    ?.also { family ->
+                                        val familyMember = familyOperations.getOrCreateFamilyMember(
+                                            realUser,
+                                            family
+                                        )
+                                        val moneyBins =
+                                            moneyBinOperations.getMoneyBinsForFamilyMember(
+                                                familyMember
+                                            )
+                                        transactionOperations.addMoney(
+                                            5.0,
+                                            moneyBins.first(),
+                                            "TEST",
+                                            "TITLE",
+                                            "NOTE",
+                                            familyMember
+                                        )
+
+                                    } ?: Log.i(
+                                    LOG_TAG,
+                                    "No families found for user [${user.value?.id}"
+                                )
+                            } ?: Log.i(LOG_TAG, "User not logged in")
+
+
                         }
                     }
 
                     UserInfoCard(user, userFamilies)
-                    AddUserToFamilyDialog(
-                        openDialog,
-                        user,
-                        familyOperations
-                    )
                 }
             }
         }
@@ -208,54 +263,5 @@ fun GrayButton(text: String, onClick: () -> Unit) {
         colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
     ) {
         Text(text, color = Color.White)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddUserToFamilyDialog(
-    openDialog: MutableState<Boolean>,
-    user: MutableState<User?>,
-    familyOperations: FamilyOperations
-) {
-    val myUser = remember { user }
-    val myOpenDialog = remember { openDialog }
-    val textState = remember { mutableStateOf(TextFieldValue("")) }
-
-    if (myOpenDialog.value) {
-        Dialog(onDismissRequest = { myOpenDialog.value = false }) {
-            Surface(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .wrapContentHeight(),
-                shape = shapes.large
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Enter Family Id to add user to")
-                    TextField(
-                        value = textState.value,
-                        onValueChange = { textState.value = it },
-                        textStyle = TextStyle(color = Color.Cyan),
-                        placeholder = { Text("Enter Family Id") }
-                    )
-                    GrayButton(text = "Add User") {
-                        myUser.value?.also { realUser ->
-                            CoroutineScope(Dispatchers.IO).launch {
-
-                                // Check that family exists
-                                val familyId = "M3Yl3xilunkucM4h4Buf" //textState.value.text
-                                if (familyOperations.familyExists(familyId)) {
-                                    familyOperations.addUserToFamily(familyId, realUser.id)
-                                } else {
-                                    Log.i(LOG_TAG, "No family found with Id [$familyId]")
-                                }
-                            }
-                        } ?: Log.i(LOG_TAG, "Cannot add user to familyt: User is NULL")
-                        myOpenDialog.value = false
-                    }
-
-                }
-            }
-        }
     }
 }

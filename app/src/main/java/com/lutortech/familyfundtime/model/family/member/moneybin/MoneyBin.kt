@@ -4,12 +4,11 @@ import java.time.Instant
 
 data class MoneyBin(
     val id: String,
+    val url: String,
+    val createdTimestamp: Instant,
     val name: String,
     val note: String,
-    val balance: Double,
-    val ownerId: String,
-    val createdTimestamp: Instant
-) {
+    val balance: Double) {
     companion object {
         const val COLLECTION = "moneybins"
         const val FIELD_BALANCE = "balance"
