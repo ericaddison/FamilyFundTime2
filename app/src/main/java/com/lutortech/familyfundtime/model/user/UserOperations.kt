@@ -1,10 +1,14 @@
 package com.lutortech.familyfundtime.model.user
 
-interface UserOperations {
+import androidx.compose.runtime.MutableState
 
-    suspend fun storeUser(user: User): Boolean
+interface UserOperations {
 
     /** TODO: paginate this. */
     suspend fun getAllUsers(): Set<User>
 
+    fun signOut()
+
+    fun currentUser(): MutableState<User?>
+    fun launchSignInActivity()
 }
