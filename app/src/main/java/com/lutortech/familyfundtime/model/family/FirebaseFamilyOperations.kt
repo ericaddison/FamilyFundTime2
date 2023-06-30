@@ -50,20 +50,6 @@ class FirebaseFamilyOperations : FamilyOperations {
         return familyRef.get().await().toFamily().also { currentFamily.value = it }
     }
 
-    private fun DocumentSnapshot.toFamily(): Family {
-        val creator = getString(Family.FIELD_CREATOR_USER_ID)
-            ?: throw IllegalStateException("No creator id for family [${reference.path}]")
-        val createdTimestamp =
-            getLong(Family.FIELD_CREATED_TIMESTAMP)?.let { Instant.ofEpochMilli(it) }
-                ?: throw IllegalStateException("No created timestamp for family [{reference.path}]")
-        return Family(
-            id,
-            reference.path,
-            creator,
-            createdTimestamp
-        )
-    }
-
     // This is probably not very performant, but also there should usually not be many families
     // per user.
     override suspend fun getFamiliesForUser(user: User): Set<Family> {
@@ -126,6 +112,21 @@ class FirebaseFamilyOperations : FamilyOperations {
     override fun currentFamily(): MutableState<Family?> = currentFamily
 
     companion object {
+
+        fun DocumentSnapshot.toFamily(): Family {
+            val creator = getString(Family.FIELD_CREATOR_USER_ID)
+                ?: throw IllegalStateException("No creator id for family [${reference.path}]")
+            val createdTimestamp =
+                getLong(Family.FIELD_CREATED_TIMESTAMP)?.let { Instant.ofEpochMilli(it) }
+                    ?: throw IllegalStateException("No created timestamp for family [{reference.path}]")
+            return Family(
+                id,
+                reference.path,
+                creator,
+                createdTimestamp
+            )
+        }
+
         fun DocumentSnapshot.toFamilyMember(user: User): FamilyMember {
             val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER)
                 ?: throw IllegalStateException("Field IS_OWNER not found for family member [${reference.path}]")
