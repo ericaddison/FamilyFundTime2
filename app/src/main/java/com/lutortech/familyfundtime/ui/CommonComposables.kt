@@ -15,7 +15,6 @@ fun ProfilePic(picUrl: Uri?, modifier: Modifier = Modifier) {
     GlideImage(
         model = picUrl,
         contentDescription = "Profile Pic",
-        modifier = modifier.clip(CircleShape),
-        contentScale = FixedScale(0.1f)
+        modifier = modifier.clip(CircleShape)
     )
 }
