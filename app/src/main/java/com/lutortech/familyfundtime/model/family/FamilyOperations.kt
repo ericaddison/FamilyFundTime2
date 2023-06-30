@@ -1,5 +1,6 @@
 package com.lutortech.familyfundtime.model.family
 
+import androidx.compose.runtime.MutableState
 import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import com.lutortech.familyfundtime.model.user.User
 
@@ -12,4 +13,6 @@ interface FamilyOperations {
     suspend fun getFamiliesForUser(user: User): Set<Family>
 
     suspend fun getOrCreateFamilyMember(user: User, family: Family): FamilyMember
+
+    fun currentFamily(): MutableState<Family?>
 }

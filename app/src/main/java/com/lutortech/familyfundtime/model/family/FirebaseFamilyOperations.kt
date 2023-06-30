@@ -1,25 +1,29 @@
 package com.lutortech.familyfundtime.model.family
 
 import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin
+import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin.Companion.MONEYBIN_BALANCE_DEFAULT
+import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin.Companion.MONEYBIN_NAME_DEFAULT
+import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBin.Companion.MONEYBIN_NOTE_DEFAULT
 import com.lutortech.familyfundtime.model.user.User
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import java.lang.IllegalStateException
 import java.time.Instant
-import kotlin.coroutines.coroutineContext
 
 class FirebaseFamilyOperations : FamilyOperations {
 
     private val db = Firebase.firestore
+    private val currentFamily: MutableState<Family?> = mutableStateOf(null)
 
     override suspend fun createFamily(owner: User): Family {
 
@@ -43,7 +47,7 @@ class FirebaseFamilyOperations : FamilyOperations {
             transaction.set(familyMemberRef, ownerData)
             transaction.set(moneyBinRef, defaultMoneyBinData())
         }.await()
-        return familyRef.get().await().toFamily()
+        return familyRef.get().await().toFamily().also { currentFamily.value = it }
     }
 
     private fun DocumentSnapshot.toFamily(): Family {
@@ -100,7 +104,7 @@ class FirebaseFamilyOperations : FamilyOperations {
                 transaction.set(moneyBinRef, defaultMoneyBinData())
             }
         }.await()
-        return familyMemberRef.get().await().toFamilyMember()
+        return familyMemberRef.get().await().toFamilyMember(user)
     }
 
     private fun defaultMoneyBinData() =
@@ -110,39 +114,34 @@ class FirebaseFamilyOperations : FamilyOperations {
             MONEYBIN_BALANCE_DEFAULT
         )
 
-    private fun getFamilyMemberFromFamily(familyPath: String, userId: String) =
+    private fun getFamilyMemberFromFamily(familyPath: String, user: User) =
         db.collection("$familyPath/${FamilyMember.COLLECTION}")
-            .whereEqualTo(FamilyMember.FIELD_USER_ID, userId)
+            .whereEqualTo(FamilyMember.FIELD_USER_ID, user.id)
             .get()
             .result
             .documents
             .firstOrNull()
-            ?.toFamilyMember()
+            ?.toFamilyMember(user)
 
-
-    private fun DocumentSnapshot.toFamilyMember(): FamilyMember {
-        val userId = this.getString(FamilyMember.FIELD_USER_ID)
-            ?: throw IllegalStateException("Field USER_ID not found for family member [${reference.path}]")
-        val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER)
-            ?: throw IllegalStateException("Field IS_OWNER not found for family member [${reference.path}]")
-        val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN)
-            ?: throw IllegalStateException("Field IS_ADMIN not found for family member [${reference.path}]")
-        val createdTimestamp = this.getLong(FamilyMember.FIELD_CREATED_TIMESTAMP)
-            ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for family member [${reference.path}]")
-        return FamilyMember(
-            this.id,
-            this.reference.path,
-            Instant.ofEpochMilli(createdTimestamp),
-            userId,
-            isOwner,
-            isAdmin
-        )
-    }
+    override fun currentFamily(): MutableState<Family?> = currentFamily
 
     companion object {
-        private const val MONEYBIN_NAME_DEFAULT = "main"
-        private const val MONEYBIN_NOTE_DEFAULT = "This is your main MoneyBin!"
-        private const val MONEYBIN_BALANCE_DEFAULT = 0.0
+        fun DocumentSnapshot.toFamilyMember(user: User): FamilyMember {
+            val isOwner = this.getBoolean(FamilyMember.FIELD_IS_OWNER)
+                ?: throw IllegalStateException("Field IS_OWNER not found for family member [${reference.path}]")
+            val isAdmin = this.getBoolean(FamilyMember.FIELD_IS_ADMIN)
+                ?: throw IllegalStateException("Field IS_ADMIN not found for family member [${reference.path}]")
+            val createdTimestamp = this.getLong(FamilyMember.FIELD_CREATED_TIMESTAMP)
+                ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for family member [${reference.path}]")
+            return FamilyMember(
+                this.id,
+                this.reference.path,
+                Instant.ofEpochMilli(createdTimestamp),
+                user,
+                isOwner,
+                isAdmin
+            )
+        }
     }
 
 }

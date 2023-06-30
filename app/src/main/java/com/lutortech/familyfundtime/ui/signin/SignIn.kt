@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.lutortech.familyfundtime.Constants.LOG_TAG
+import com.lutortech.familyfundtime.ui.ProfilePic
 
 @Composable
 fun SignIn(signInViewModel: SignInViewModel, modifier: Modifier = Modifier) {
@@ -54,7 +55,6 @@ fun SignIn(signInViewModel: SignInViewModel, modifier: Modifier = Modifier) {
             )
         }
     }
-
 }
 
 private fun SignInViewModel.sendEvent(event: SignInEvent) {
@@ -74,15 +74,4 @@ private fun SignOutButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(onClick = onClick, modifier = modifier) {
         Text("Sign Out!")
     }
-}
-
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
-private fun ProfilePic(picUrl: Uri?, modifier: Modifier = Modifier) {
-    GlideImage(
-        model = picUrl,
-        contentDescription = "Profile Pic",
-        modifier = modifier.clip(CircleShape),
-        contentScale = FixedScale(0.1f)
-    )
 }

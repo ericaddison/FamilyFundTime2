@@ -14,13 +14,11 @@ import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.lutortech.familyfundtime.Constants.LOG_TAG
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
@@ -78,24 +76,6 @@ class FirebaseUserOperations(
     override suspend fun getAllUsers(): Set<User> =
         db.collection(User.COLLECTION).get().await().map { it.toUser() }.toSet()
 
-    private fun DocumentSnapshot.toUser(): User {
-        val displayName = this.getString(User.FIELD_DISPLAY_NAME)
-            ?: throw IllegalStateException("Field FIELD_DISPLAY_NAME not found for user [${reference.path}]")
-        val email = this.getString(User.FIELD_EMAIL)
-            ?: throw IllegalStateException("Field FIELD_EMAIL not found for user [${reference.path}]")
-        val profilePicUrl = this.getString(User.FIELD_PROFILE_PIC_URL)
-            ?: throw IllegalStateException("Field FIELD_PROFILE_PIC_URL not found for user [${reference.path}]")
-        val createdTimestamp = this.getLong(User.FIELD_CREATED_TIMESTAMP)
-            ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for user [${reference.path}]")
-        return User(
-            this.id,
-            Instant.ofEpochMilli(createdTimestamp),
-            displayName,
-            email,
-            Uri.parse(profilePicUrl)
-        )
-    }
-
     private suspend fun getUserById(userId: String): User? =
         db.document("${User.COLLECTION}/$userId").get().await().takeIf { it.exists() }?.toUser()
 
@@ -128,5 +108,25 @@ class FirebaseUserOperations(
     override fun currentUser(): MutableState<User?> = signedInUser
 
     private fun FirebaseUser.toUser() = User(uid, Instant.EPOCH, displayName, email, photoUrl)
+
+    companion object {
+        fun DocumentSnapshot.toUser(): User {
+            val displayName = this.getString(User.FIELD_DISPLAY_NAME)
+                ?: throw IllegalStateException("Field FIELD_DISPLAY_NAME not found for user [${reference.path}]")
+            val email = this.getString(User.FIELD_EMAIL)
+                ?: throw IllegalStateException("Field FIELD_EMAIL not found for user [${reference.path}]")
+            val profilePicUrl = this.getString(User.FIELD_PROFILE_PIC_URL)
+                ?: throw IllegalStateException("Field FIELD_PROFILE_PIC_URL not found for user [${reference.path}]")
+            val createdTimestamp = this.getLong(User.FIELD_CREATED_TIMESTAMP)
+                ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for user [${reference.path}]")
+            return User(
+                this.id,
+                Instant.ofEpochMilli(createdTimestamp),
+                displayName,
+                email,
+                Uri.parse(profilePicUrl)
+            )
+        }
+    }
 
 }

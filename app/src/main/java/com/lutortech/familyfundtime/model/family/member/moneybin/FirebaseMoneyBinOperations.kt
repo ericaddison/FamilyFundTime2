@@ -15,7 +15,6 @@ class FirebaseMoneyBinOperations : MoneyBinOperations {
         db.collection("${familyMember.url}/${MoneyBin.COLLECTION}").get().await()
             .map { it.toMoneyBin() }.toSet()
 
-
     private fun QueryDocumentSnapshot.toMoneyBin() = MoneyBin(
         id = this.id,
         url = this.reference.path,

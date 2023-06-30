@@ -15,6 +15,9 @@ data class MoneyBin(
         const val FIELD_NAME = "name"
         const val FIELD_NOTE = "note"
         const val FIELD_CREATED_TIMESTAMP = "created_timestamp"
+        const val MONEYBIN_NAME_DEFAULT = "main"
+        const val MONEYBIN_NOTE_DEFAULT = "This is your main MoneyBin!"
+        const val MONEYBIN_BALANCE_DEFAULT = 0.0
 
         fun dbDataMap(name: String, note: String, balance: Double) =
             mapOf(
