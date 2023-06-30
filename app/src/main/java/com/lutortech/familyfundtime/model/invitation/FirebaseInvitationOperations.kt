@@ -29,7 +29,8 @@ class FirebaseInvitationOperations : InvitationOperations {
         note: String?
     ): Invitation {
         val data = Invitation.dbDataMap(from, to, family, note, InvitationStatus.PENDING)
-        db.collection(Invitation.COLLECTION).add(data).await().get().await().toInvitation()
+        val invitationRef = db.collection(Invitation.COLLECTION).add(data).await()
+        return invitationRef.get().await().toInvitation()
     }
 
     private suspend fun DocumentSnapshot.toInvitation(): Invitation {
