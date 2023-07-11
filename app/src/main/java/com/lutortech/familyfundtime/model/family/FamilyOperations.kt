@@ -12,7 +12,5 @@ interface FamilyOperations {
     /** Returns the ids of the Families user is a part of */
     suspend fun getFamiliesForUser(user: User): Set<Family>
 
-    suspend fun getOrCreateFamilyMember(user: User, family: Family): FamilyMember
-
-    fun currentFamily(): MutableState<Family?>
+    suspend fun getOrCreateUserBackedFamilyMember(user: User, family: Family): FamilyMember
 }

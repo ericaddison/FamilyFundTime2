@@ -1,11 +1,7 @@
 package com.lutortech.familyfundtime.ui.family
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lutortech.familyfundtime.Constants.LOG_TAG
@@ -13,43 +9,40 @@ import com.lutortech.familyfundtime.model.family.Family
 import com.lutortech.familyfundtime.model.family.FamilyOperations
 import com.lutortech.familyfundtime.model.family.member.FamilyMemberOperations
 import com.lutortech.familyfundtime.model.user.UserOperations
+import com.lutortech.familyfundtime.ui.UiState
 import com.lutortech.familyfundtime.ui.family.FamilyListEvent.UserEventClickedFamily
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FamilyListViewModel(
+    private val uiState: UiState,
     userOperations: UserOperations,
     familyOperations: FamilyOperations,
-    val familyMemberOperations: FamilyMemberOperations
+    private val familyMemberOperations: FamilyMemberOperations
 ) : ViewModel() {
 
     // UI State
-    val user = userOperations.currentUser()
-    val selectedFamily = familyOperations.currentFamily()
+    val user = uiState.currentUser
+    val isSignedIn = uiState.isSignedIn
+    val selectedFamily = uiState.selectedFamily
 
     // Private flows
-    private val userFlow = snapshotFlow { user.value }
     private val selectedFamilyFlow = snapshotFlow { selectedFamily.value }
 
 
     init {
         viewModelScope.launch {
             // When the user changes, set SelectedFamily to null
-            userFlow.map { selectedFamily.value = null }.collect()
+            user.map { selectedFamily.value = null }.collect()
         }
     }
 
-    private val familiesFromUserChangeFlow = userFlow.map {
+    private val familiesFromUserChangeFlow = user.map {
         it?.let { realUser -> familyOperations.getFamiliesForUser(realUser) } ?: setOf()
     }
 
@@ -83,7 +76,7 @@ class FamilyListViewModel(
                 "Selected Family changed to [${event.family.url}], loading new family members"
             )
             val newFamilyMembers = familyMemberOperations.getFamilyMembersForFamily(event.family)
-            familyMemberOperations.currentFamilyMembers().value = newFamilyMembers
+            uiState.currentFamilyMembers.value = newFamilyMembers
         }
     }
 

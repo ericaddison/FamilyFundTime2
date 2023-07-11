@@ -1,6 +1,6 @@
 package com.lutortech.familyfundtime.model.user
 
-import androidx.compose.runtime.MutableState
+import kotlinx.coroutines.flow.StateFlow
 
 interface UserOperations {
 
@@ -9,6 +9,6 @@ interface UserOperations {
 
     fun signOut()
 
-    fun currentUser(): MutableState<User?>
+    fun currentUser(): StateFlow<User?>
     fun launchSignInActivity()
 }

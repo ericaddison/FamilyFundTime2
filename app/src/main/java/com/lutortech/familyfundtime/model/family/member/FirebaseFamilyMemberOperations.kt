@@ -39,6 +39,4 @@ class FirebaseFamilyMemberOperations : FamilyMemberOperations {
             }
         }.awaitAll().toSet()
     }
-
-    override fun currentFamilyMembers(): MutableState<Set<FamilyMember>> = currentFamilyMembers
 }

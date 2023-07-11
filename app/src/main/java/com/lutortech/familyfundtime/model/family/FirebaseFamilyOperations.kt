@@ -23,7 +23,6 @@ import java.time.Instant
 class FirebaseFamilyOperations : FamilyOperations {
 
     private val db = Firebase.firestore
-    private val currentFamily: MutableState<Family?> = mutableStateOf(null)
 
     override suspend fun createFamily(owner: User): Family {
 
@@ -47,7 +46,7 @@ class FirebaseFamilyOperations : FamilyOperations {
             transaction.set(familyMemberRef, ownerData)
             transaction.set(moneyBinRef, defaultMoneyBinData())
         }.await()
-        return familyRef.get().await().toFamily().also { currentFamily.value = it }
+        return familyRef.get().await().toFamily()
     }
 
     // This is probably not very performant, but also there should usually not be many families
@@ -63,7 +62,7 @@ class FirebaseFamilyOperations : FamilyOperations {
             .awaitAll().toSet()
     }
 
-    override suspend fun getOrCreateFamilyMember(user: User, family: Family): FamilyMember {
+    override suspend fun getOrCreateUserBackedFamilyMember(user: User, family: Family): FamilyMember {
         val familyMemberRef = db.collection(
             "${family.url}/${FamilyMember.COLLECTION}"
         ).document(user.id)
@@ -108,8 +107,6 @@ class FirebaseFamilyOperations : FamilyOperations {
             .documents
             .firstOrNull()
             ?.toFamilyMember(user)
-
-    override fun currentFamily(): MutableState<Family?> = currentFamily
 
     companion object {
 

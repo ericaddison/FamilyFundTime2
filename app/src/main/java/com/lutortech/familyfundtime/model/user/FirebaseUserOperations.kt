@@ -6,8 +6,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
@@ -19,6 +17,9 @@ import com.google.firebase.ktx.Firebase
 import com.lutortech.familyfundtime.Constants.LOG_TAG
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
@@ -38,22 +39,19 @@ class FirebaseUserOperations(
 
     private val backgroundScope = CoroutineScope(Dispatchers.IO)
 
-    // Shared state
-    private val signedInUser: MutableState<User?> = mutableStateOf(auth.currentUser?.toUser())
-
     private fun onSignIn(result: FirebaseAuthUIAuthenticationResult) {
         if (result.resultCode == RESULT_OK) {
             auth.currentUser?.also {
                 backgroundScope.launch {
                     // see if we already have this user:
                     val newUser = getUserById(it.uid) ?: it.toUser().also { storeUser(it) }
-                    signedInUser.value = newUser
+                    _userStateFlow.value = newUser
                     Log.d(LOG_TAG, "Successful sign-in for user [${newUser.id}]")
                 }
             }
         } else {
+            _userStateFlow.value = null
             Log.w(LOG_TAG, "Sign-in failed: [${result.resultCode}")
-            signedInUser.value = null
         }
     }
 
@@ -101,11 +99,12 @@ class FirebaseUserOperations(
 
     override fun signOut() {
         auth.signOut()
-        signedInUser.value = null
+        _userStateFlow.value = null
         Log.d(LOG_TAG, "user signed out")
     }
 
-    override fun currentUser(): MutableState<User?> = signedInUser
+    private val _userStateFlow = MutableStateFlow(auth.currentUser?.toUser())
+    override fun currentUser(): StateFlow<User?> = _userStateFlow.asStateFlow()
 
     private fun FirebaseUser.toUser() = User(uid, Instant.EPOCH, displayName, email, photoUrl)
 

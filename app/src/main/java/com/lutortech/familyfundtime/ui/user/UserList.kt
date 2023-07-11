@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,10 +24,12 @@ fun UserList(viewModel: UserListViewModel, modifier: Modifier = Modifier) {
 
     // remembered state
     val allUsers by remember { viewModel.allUsers }
-    val currentUser by remember { viewModel.user }
+    val currentUser by viewModel.user.collectAsState()
 
     Surface(
-        modifier = modifier.height(200.dp).fillMaxWidth()
+        modifier = modifier
+            .height(200.dp)
+            .fillMaxWidth()
     ) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp)

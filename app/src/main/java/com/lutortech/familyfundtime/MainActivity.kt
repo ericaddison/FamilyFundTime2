@@ -8,7 +8,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -27,6 +26,7 @@ import com.lutortech.familyfundtime.model.family.transaction.FirebaseTransaction
 import com.lutortech.familyfundtime.model.family.transaction.TransactionOperations
 import com.lutortech.familyfundtime.model.user.FirebaseUserOperations
 import com.lutortech.familyfundtime.model.user.UserOperations
+import com.lutortech.familyfundtime.ui.UiState
 import com.lutortech.familyfundtime.ui.family.FamilyList
 import com.lutortech.familyfundtime.ui.family.FamilyListViewModel
 import com.lutortech.familyfundtime.ui.familymember.FamilyMemberList
@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private val familyMemberOperations: FamilyMemberOperations = FirebaseFamilyMemberOperations()
     private val moneyBinOperations: MoneyBinOperations = FirebaseMoneyBinOperations()
     private val transactionOperations: TransactionOperations = FirebaseTransactionOperations()
+    private val uiState = UiState(userOperations, familyMemberOperations)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
 
                     SignIn(
                         SignInViewModel(
+                            uiState,
                             userOperations = userOperations
                         ),
                         modifier = elementModifier
@@ -75,30 +77,32 @@ class MainActivity : ComponentActivity() {
                     GrayButton(text = "Create New Family") {
                         CoroutineScope(Dispatchers.IO).launch {
                             Log.d(LOG_TAG, "creating family")
-                            userOperations.currentUser().value?.also {
-                                familyOperations.createFamily(
+                            uiState.currentUser.value?.also {
+                                val newFamily = familyOperations.createFamily(
                                     it
                                 )
+                                uiState.selectedFamily.value = newFamily
                             }
                         }
                     }
 
                     FamilyList(
                         FamilyListViewModel(
+                            uiState,
                             userOperations,
                             familyOperations,
                             familyMemberOperations
-                        ), modifier = elementModifier
+                        ),
+                        modifier = elementModifier
                     )
                     FamilyMemberList(
                         FamilyMemberListViewModel(
-                            familyMemberOperations,
-                            familyOperations,
+                            uiState,
                             moneyBinOperations
                         ), modifier = elementModifier
                     )
                     UserList(
-                        viewModel = UserListViewModel(userOperations),
+                        viewModel = UserListViewModel(uiState, userOperations),
                         modifier = elementModifier
                     )
                 }

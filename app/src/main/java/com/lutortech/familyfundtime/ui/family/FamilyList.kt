@@ -22,11 +22,19 @@ import com.lutortech.familyfundtime.model.family.Family
 import com.lutortech.familyfundtime.ui.family.FamilyListEvent.UserEventClickedFamily
 
 @Composable
-fun FamilyList(familyListViewModel: FamilyListViewModel, modifier: Modifier = Modifier) {
+fun FamilyList(
+    viewModel: FamilyListViewModel,
+    modifier: Modifier = Modifier
+) {
 
     // remembered state
-    val families by familyListViewModel.families.collectAsState(initial = setOf())
-    val selectedFamily by remember { familyListViewModel.selectedFamily }
+    val families by viewModel.families.collectAsState(initial = setOf())
+    val selectedFamily by remember { viewModel.selectedFamily }
+    val isSignedIn by viewModel.isSignedIn.collectAsState(initial = false)
+
+    if (!isSignedIn) {
+        return
+    }
 
     Surface(
         modifier = modifier
@@ -45,7 +53,7 @@ fun FamilyList(familyListViewModel: FamilyListViewModel, modifier: Modifier = Mo
                     modifier
                         .padding(10.dp)
                         .clickable {
-                            familyListViewModel.onEvent(
+                            viewModel.onEvent(
                                 UserEventClickedFamily(it)
                             )
                         })
