@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.lutortech.familyfundtime.ui.UiState
 
 @Composable
 fun FamilyMemberList(
@@ -25,7 +24,7 @@ fun FamilyMemberList(
 
 // remembered state
     val familyMembers by remember { viewModel.familyMembers }
-    val isSignedIn by viewModel.isSignedIn.collectAsState(initial = false)
+    val isSignedIn by viewModel.isSignedIn.collectAsState()
 
     if (!isSignedIn) {
         return
@@ -43,7 +42,7 @@ fun FamilyMemberList(
         ) {
             items(familyMembers.toList()) {
                 FamilyMemberCard(
-                    viewModel = viewModel.familyMemberCardViewModel(it),
+                    viewModel = viewModel.familyMemberViewModel(it),
                     modifier
                 )
             }

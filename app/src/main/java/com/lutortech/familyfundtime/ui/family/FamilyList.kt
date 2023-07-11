@@ -28,9 +28,9 @@ fun FamilyList(
 ) {
 
     // remembered state
-    val families by viewModel.families.collectAsState(initial = setOf())
+    val families by viewModel.families.collectAsState()
     val selectedFamily by remember { viewModel.selectedFamily }
-    val isSignedIn by viewModel.isSignedIn.collectAsState(initial = false)
+    val isSignedIn by viewModel.isSignedIn.collectAsState()
 
     if (!isSignedIn) {
         return

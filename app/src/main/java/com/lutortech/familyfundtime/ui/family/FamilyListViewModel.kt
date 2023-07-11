@@ -28,12 +28,11 @@ class FamilyListViewModel(
 
     // UI State
     val user = uiState.currentUser
-    val isSignedIn = uiState.isSignedIn
+    val isSignedIn: StateFlow<Boolean> = uiState.isSignedIn
     val selectedFamily = uiState.selectedFamily
 
     // Private flows
     private val selectedFamilyFlow = snapshotFlow { selectedFamily.value }
-
 
     init {
         viewModelScope.launch {

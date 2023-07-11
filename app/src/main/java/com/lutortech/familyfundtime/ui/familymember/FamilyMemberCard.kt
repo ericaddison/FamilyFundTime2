@@ -12,21 +12,26 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lutortech.familyfundtime.ui.ProfilePic
+import java.text.NumberFormat
+import java.util.Currency
 
 
 @Composable
 fun FamilyMemberCard(
-    viewModel: FamilyMemberCardViewModel,
+    viewModel: FamilyMemberViewModel,
     modifier: Modifier = Modifier
 ) {
 
-//     remembered states
-//    val totalBalance by remember{ viewModel.totalBalance }
-//    val mainBinBalance by remember{ viewModel.mainBinBalance }
+//    remembered states
+    val totalBalance by viewModel.totalBalance.collectAsState()
+    val mainBinBalance by viewModel.mainBalance.collectAsState()
 
     Card(
         modifier = modifier
@@ -49,10 +54,17 @@ fun FamilyMemberCard(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(text = viewModel.displayName() ?: "NO NAME")
-                Text(text = "Total $$: ???")
-                Text(text = "Main Bin $$: ???")
+                MoneyBinBalance(name = "total", balance = totalBalance)
+                MoneyBinBalance(name = "main", balance = mainBinBalance)
             }
         }
     }
 
+}
+
+@Composable
+fun MoneyBinBalance(name: String, balance: Double?, modifier: Modifier = Modifier) {
+    val format: NumberFormat = NumberFormat.getCurrencyInstance()
+    format.maximumFractionDigits = 0
+    Text(text = "$name: ${balance?.let{format.format(it)} ?: "?"}")
 }

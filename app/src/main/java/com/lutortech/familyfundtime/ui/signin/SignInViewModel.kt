@@ -18,7 +18,7 @@ class SignInViewModel(
 
     // UI State
     val user: StateFlow<User?> = uiState.currentUser
-    val isSignedIn: Flow<Boolean> = uiState.isSignedIn
+    val isSignedIn: StateFlow<Boolean> = uiState.isSignedIn
 
     // Event Handler
     fun onEvent(event: SignInEvent){

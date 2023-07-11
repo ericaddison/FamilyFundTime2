@@ -22,7 +22,7 @@ fun SignIn(viewModel: SignInViewModel, modifier: Modifier = Modifier) {
 
     // remembered state
     val user by viewModel.user.collectAsState()
-    val isSignedIn by viewModel.isSignedIn.collectAsState(initial = false)
+    val isSignedIn by viewModel.isSignedIn.collectAsState()
 
     Surface(
         modifier = modifier
