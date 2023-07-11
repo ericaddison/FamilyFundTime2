@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                                 val newFamily = familyOperations.createFamily(
                                     it
                                 )
-                                uiState.selectedFamily.value = newFamily
+                                uiState.setSelectedFamily(newFamily)
                             }
                         }
                     }

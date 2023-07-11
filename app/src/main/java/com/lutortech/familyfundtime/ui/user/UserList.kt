@@ -23,7 +23,7 @@ import com.lutortech.familyfundtime.model.user.User
 fun UserList(viewModel: UserListViewModel, modifier: Modifier = Modifier) {
 
     // remembered state
-    val allUsers by remember { viewModel.allUsers }
+    val allUsers by viewModel.allUsers.collectAsState()
     val currentUser by viewModel.user.collectAsState()
 
     Surface(

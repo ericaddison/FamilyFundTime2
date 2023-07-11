@@ -9,7 +9,9 @@ import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import com.lutortech.familyfundtime.model.family.member.moneybin.MoneyBinOperations
 import com.lutortech.familyfundtime.ui.UiState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class FamilyMemberListViewModel(
     uiState: UiState,
@@ -18,13 +20,13 @@ class FamilyMemberListViewModel(
 
     // UI State
     val isSignedIn: StateFlow<Boolean> = uiState.isSignedIn
-    val familyMembers: MutableState<Set<FamilyMember>> = uiState.currentFamilyMembers
+    val familyMembers: StateFlow<Set<FamilyMember>> = uiState.currentFamilyMembers
 
     // Event Handlers
 
     // Other Functions
     fun familyMemberViewModel(familyMember: FamilyMember): FamilyMemberViewModel {
-        val familyMemberState = mutableStateOf(familyMembers.value.first { it == familyMember })
-        return FamilyMemberViewModel(familyMemberState, moneyBinOperations)
+        val familyMemberState = MutableStateFlow(familyMembers.value.first { it == familyMember })
+        return FamilyMemberViewModel(familyMemberState.asStateFlow(), moneyBinOperations)
     }
 }

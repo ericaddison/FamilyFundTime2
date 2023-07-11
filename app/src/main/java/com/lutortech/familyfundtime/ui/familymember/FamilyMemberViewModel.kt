@@ -15,16 +15,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FamilyMemberViewModel(
-    val familyMember: MutableState<FamilyMember>,
+    private val familyMember: StateFlow<FamilyMember>,
     private val moneyBinOperations: MoneyBinOperations
 ) : ViewModel() {
 
     // UI State
-    val allMoneyBins: StateFlow<Set<MoneyBin>> = snapshotFlow { familyMember.value }.map {
+    val allMoneyBins: StateFlow<Set<MoneyBin>> = familyMember.map {
         moneyBinOperations.getMoneyBinsForFamilyMember(it)
     }.stateIn(viewModelScope, SharingStarted.Lazily, initialValue = setOf())
 
