@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
+import com.firebase.ui.auth.FirebaseUiException
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.lang.Exception
 import java.time.Instant
 
 
@@ -51,7 +53,7 @@ class FirebaseUserOperations(
             }
         } else {
             _userStateFlow.value = null
-            Log.w(LOG_TAG, "Sign-in failed: [${result.resultCode}")
+            Log.w(LOG_TAG, "Sign-in failed: [${result.idpResponse}]")
         }
     }
 
