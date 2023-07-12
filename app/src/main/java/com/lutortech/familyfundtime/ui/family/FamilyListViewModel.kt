@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 
 class FamilyListViewModel(
     private val uiState: UiState,
-    userOperations: UserOperations,
+    private val userOperations: UserOperations,
     familyOperations: FamilyOperations,
     private val familyMemberOperations: FamilyMemberOperations
 ) : ViewModel() {
@@ -59,6 +59,11 @@ class FamilyListViewModel(
             return
         }
         uiState.setSelectedFamily(event.family)
+        viewModelScope.launch {
+            user.value?.let {
+                userOperations.setLastSelectedFamily(it, event.family)
+            }
+        }
     }
 
 }

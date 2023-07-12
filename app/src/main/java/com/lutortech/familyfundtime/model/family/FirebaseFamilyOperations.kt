@@ -62,7 +62,10 @@ class FirebaseFamilyOperations : FamilyOperations {
             .awaitAll().toSet()
     }
 
-    override suspend fun getOrCreateUserBackedFamilyMember(user: User, family: Family): FamilyMember {
+    override suspend fun getOrCreateUserBackedFamilyMember(
+        user: User,
+        family: Family
+    ): FamilyMember {
         val familyMemberRef = db.collection(
             "${family.url}/${FamilyMember.COLLECTION}"
         ).document(user.id)
@@ -91,6 +94,12 @@ class FirebaseFamilyOperations : FamilyOperations {
         }.await()
         return familyMemberRef.get().await().toFamilyMember(user)
     }
+
+    override suspend fun getFamily(familyId: String?): Family? =
+        familyId?.takeIf { it.isNotEmpty() }.let { realFamilyId ->
+            db.document("${Family.COLLECTION}/$realFamilyId").get().await().takeIf { it.exists() }
+                ?.toFamily()
+        }
 
     private fun defaultMoneyBinData() =
         MoneyBin.dbDataMap(

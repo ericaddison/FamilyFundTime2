@@ -8,14 +8,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.FirebaseUiException
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.lutortech.familyfundtime.Constants.LOG_TAG
+import com.lutortech.familyfundtime.model.family.Family
+import com.lutortech.familyfundtime.model.family.FirebaseFamilyOperations.Companion.toFamily
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +25,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.lang.Exception
 import java.time.Instant
 
 
@@ -99,13 +100,27 @@ class FirebaseUserOperations(
         signInLauncher.launch(signInIntent)
     }
 
+    override suspend fun setLastSelectedFamily(user: User, family: Family?) {
+        val familyId = family?.id ?: ""
+        db.document("${User.COLLECTION}/${user.id}")
+            .update(User.FIELD_LAST_SELECTED_FAMILY_ID, familyId)
+        Log.d(LOG_TAG, "Set last selected family for user [${user.id}] to [$familyId]")
+    }
+
     override fun signOut() {
         auth.signOut()
         _userStateFlow.value = null
         Log.d(LOG_TAG, "user signed out")
     }
 
-    private val _userStateFlow = MutableStateFlow(auth.currentUser?.toUser())
+    init {
+        // initialize _userStateFlow with current user
+        backgroundScope.launch {
+            auth.currentUser?.uid?.let { realUid -> _userStateFlow.value = getUserById(realUid) }
+        }
+    }
+
+    private val _userStateFlow: MutableStateFlow<User?> = MutableStateFlow(null)
     override fun currentUser(): StateFlow<User?> = _userStateFlow.asStateFlow()
 
     private fun FirebaseUser.toUser() = User(uid, Instant.EPOCH, displayName, email, photoUrl)
@@ -120,12 +135,15 @@ class FirebaseUserOperations(
                 ?: throw IllegalStateException("Field FIELD_PROFILE_PIC_URL not found for user [${reference.path}]")
             val createdTimestamp = this.getLong(User.FIELD_CREATED_TIMESTAMP)
                 ?: throw IllegalStateException("Field CREATED_TIMESTAMP not found for user [${reference.path}]")
+            val lastSelectedFamilyId = this.getString(User.FIELD_LAST_SELECTED_FAMILY_ID) ?: ""
+
             return User(
                 this.id,
                 Instant.ofEpochMilli(createdTimestamp),
                 displayName,
                 email,
-                Uri.parse(profilePicUrl)
+                Uri.parse(profilePicUrl),
+                lastSelectedFamilyId
             )
         }
     }

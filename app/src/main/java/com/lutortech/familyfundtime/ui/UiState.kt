@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.family.Family
+import com.lutortech.familyfundtime.model.family.FamilyOperations
 import com.lutortech.familyfundtime.model.family.member.FamilyMember
 import com.lutortech.familyfundtime.model.family.member.FamilyMemberOperations
 import com.lutortech.familyfundtime.model.user.User
@@ -21,7 +22,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class UiState(userOperations: UserOperations, familyMemberOperations: FamilyMemberOperations) :
+class UiState(
+    userOperations: UserOperations,
+    private val familyOperations: FamilyOperations,
+    familyMemberOperations: FamilyMemberOperations
+) :
     ViewModel() {
 
     // private flows
@@ -44,8 +49,18 @@ class UiState(userOperations: UserOperations, familyMemberOperations: FamilyMemb
     init {
         // Flow to clear selectedFamily when currentUser changes
         viewModelScope.launch {
-            currentUser.map { setSelectedFamily(null) }.collect()
+            // initial value
+            fetchAndSetSelectedFamily(currentUser.value)
+            currentUser.map {
+                fetchAndSetSelectedFamily(it)
+            }.collect()
         }
+    }
+
+    private suspend fun fetchAndSetSelectedFamily(user: User?) {
+        val family =
+            user?.let { realUser -> familyOperations.getFamily(realUser.lastSelectedFamilyId) }
+        setSelectedFamily(family)
     }
 
     fun setSelectedFamily(family: Family?) {

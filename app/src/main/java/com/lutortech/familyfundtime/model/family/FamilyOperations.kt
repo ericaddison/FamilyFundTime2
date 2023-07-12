@@ -13,4 +13,6 @@ interface FamilyOperations {
     suspend fun getFamiliesForUser(user: User): Set<Family>
 
     suspend fun getOrCreateUserBackedFamilyMember(user: User, family: Family): FamilyMember
+
+    suspend fun getFamily(familyId: String?): Family?
 }

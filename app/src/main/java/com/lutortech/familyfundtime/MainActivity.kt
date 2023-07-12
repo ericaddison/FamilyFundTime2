@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
     private val familyMemberOperations: FamilyMemberOperations = FirebaseFamilyMemberOperations()
     private val moneyBinOperations: MoneyBinOperations = FirebaseMoneyBinOperations()
     private val transactionOperations: TransactionOperations = FirebaseTransactionOperations()
-    private val uiState = UiState(userOperations, familyMemberOperations)
+    private val uiState = UiState(userOperations, familyOperations, familyMemberOperations)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

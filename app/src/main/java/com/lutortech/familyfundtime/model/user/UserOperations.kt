@@ -1,5 +1,6 @@
 package com.lutortech.familyfundtime.model.user
 
+import com.lutortech.familyfundtime.model.family.Family
 import kotlinx.coroutines.flow.StateFlow
 
 interface UserOperations {
@@ -10,5 +11,8 @@ interface UserOperations {
     fun signOut()
 
     fun currentUser(): StateFlow<User?>
+
     fun launchSignInActivity()
+
+    suspend fun setLastSelectedFamily(user: User, family: Family?)
 }
