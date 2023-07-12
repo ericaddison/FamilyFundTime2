@@ -1,11 +1,13 @@
 package com.lutortech.familyfundtime.ui.signin
 
 import android.util.Log
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,7 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextAlign
 import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.ui.ProfilePic
 
@@ -28,23 +30,34 @@ fun SignIn(viewModel: SignInViewModel, modifier: Modifier = Modifier) {
 
     Surface(
         modifier = modifier
-            .border(width = Dp(1f), color = Color.Cyan)
             .fillMaxWidth()
-            .padding(Dp(5f))
+            .fillMaxHeight()
     ) {
+        val elementModifier = modifier.fillMaxHeight()
         if (isSignedIn) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = elementModifier
+            ) {
                 SignOutButton(
                     onClick = { viewModel.sendEvent(SignInEvent.USER_EVENT_SIGN_OUT) },
-                    modifier = modifier
+                    modifier = elementModifier.weight(3f)
                 )
-                Text(user?.displayName ?: "NO USER", modifier = modifier, color = Color.Cyan)
-                ProfilePic(picUrl = user?.profilePicUrl, modifier = modifier)
+                Box(modifier = elementModifier.weight(5f), contentAlignment = Alignment.Center) {
+                    Text(
+                        user?.displayName ?: "NO USER",
+                        modifier = Modifier,
+                        color = Color.Cyan,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                ProfilePic(picUrl = user?.profilePicUrl, modifier = elementModifier.weight(2f))
             }
         } else {
             SignInButton(
                 { viewModel.sendEvent(SignInEvent.USER_EVENT_LAUNCH_SIGN_IN) },
-                modifier.fillMaxWidth()
+                elementModifier
             )
         }
     }

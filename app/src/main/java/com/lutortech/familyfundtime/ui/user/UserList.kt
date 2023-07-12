@@ -28,7 +28,6 @@ fun UserList(viewModel: UserListViewModel, modifier: Modifier = Modifier) {
 
     Surface(
         modifier = modifier
-            .height(200.dp)
             .fillMaxWidth()
     ) {
         LazyColumn(

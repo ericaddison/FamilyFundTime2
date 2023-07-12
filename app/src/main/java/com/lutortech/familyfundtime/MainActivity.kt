@@ -6,13 +6,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,19 +60,19 @@ class MainActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(20.dp)
+                        .padding(5.dp)
                 ) {
 
-                    val elementModifier = Modifier
-                        .border(width = 1.dp, color = Color.Cyan)
-                        .padding(5.dp)
+                    val standardModifier = Modifier
+//                        .border(width = 1.dp, color = Color.Cyan)
+                        .padding(1.dp)
 
                     SignIn(
                         SignInViewModel(
                             uiState,
                             userOperations = userOperations
                         ),
-                        modifier = elementModifier
+                        modifier = standardModifier.height(45.dp)
                     )
 
 //                    GrayButton(text = "Create New Family") {
@@ -88,37 +88,44 @@ class MainActivity : ComponentActivity() {
 //                    }
 
                     val isSignedIn by uiState.isSignedIn.collectAsState()
-                    if(isSignedIn) {
-                        GrayBorderToggleButton(
-                            text = "All Families",
-                            toggleState = uiState.showFamilyList
-                        ) {
-                            uiState.setShowFamilyList(!uiState.showFamilyList.value)
-                        }
-
-                        FamilyList(
-                            FamilyListViewModel(
-                                uiState,
-                                userOperations,
-                                familyOperations,
-                                familyMemberOperations
-                            ),
-                            modifier = elementModifier
-                        )
-                        FamilyMemberList(
-                            FamilyMemberListViewModel(
-                                uiState,
-                                moneyBinOperations
-                            ), modifier = elementModifier
-                        )
+                    if (isSignedIn) {
+                        signedInUi(standardModifier)
                     }
                     UserList(
                         viewModel = UserListViewModel(uiState, userOperations),
-                        modifier = elementModifier
+                        modifier = standardModifier
                     )
                 }
             }
         }
+    }
+
+    @Composable
+    private fun signedInUi(modifier: Modifier = Modifier) {
+        GrayBorderToggleButton(
+            text = "All Families",
+            toggleState = uiState.showFamilyList
+        ) {
+            uiState.setShowFamilyList(!uiState.showFamilyList.value)
+        }
+
+        FamilyList(
+            FamilyListViewModel(
+                uiState,
+                userOperations,
+                familyOperations,
+                familyMemberOperations
+            ),
+            modifier = modifier.fillMaxHeight(fraction = 0.5f)
+        )
+        FamilyMemberList(
+            FamilyMemberListViewModel(
+                uiState,
+                moneyBinOperations
+            ),
+            modifier = modifier
+                .fillMaxHeight(fraction = 0.75f)
+        )
     }
 
 }

@@ -113,14 +113,14 @@ class FirebaseUserOperations(
         Log.d(LOG_TAG, "user signed out")
     }
 
+    private val _userStateFlow: MutableStateFlow<User?> = MutableStateFlow(null)
+
     init {
         // initialize _userStateFlow with current user
         backgroundScope.launch {
             auth.currentUser?.uid?.let { realUid -> _userStateFlow.value = getUserById(realUid) }
         }
     }
-
-    private val _userStateFlow: MutableStateFlow<User?> = MutableStateFlow(null)
     override fun currentUser(): StateFlow<User?> = _userStateFlow.asStateFlow()
 
     private fun FirebaseUser.toUser() = User(uid, Instant.EPOCH, displayName, email, photoUrl)
