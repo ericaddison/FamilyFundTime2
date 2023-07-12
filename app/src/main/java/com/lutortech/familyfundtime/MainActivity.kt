@@ -1,21 +1,24 @@
 package com.lutortech.familyfundtime
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.lutortech.familyfundtime.Constants.LOG_TAG
 import com.lutortech.familyfundtime.model.family.FamilyOperations
 import com.lutortech.familyfundtime.model.family.FirebaseFamilyOperations
 import com.lutortech.familyfundtime.model.family.member.FamilyMemberOperations
@@ -36,9 +39,7 @@ import com.lutortech.familyfundtime.ui.signin.SignInViewModel
 import com.lutortech.familyfundtime.ui.theme.FamilyFundTimeTheme
 import com.lutortech.familyfundtime.ui.user.UserList
 import com.lutortech.familyfundtime.ui.user.UserListViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 
 
 class MainActivity : ComponentActivity() {
@@ -74,33 +75,43 @@ class MainActivity : ComponentActivity() {
                         modifier = elementModifier
                     )
 
-                    GrayButton(text = "Create New Family") {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            Log.d(LOG_TAG, "creating family")
-                            uiState.currentUser.value?.also {
-                                val newFamily = familyOperations.createFamily(
-                                    it
-                                )
-                                uiState.setSelectedFamily(newFamily)
-                            }
-                        }
-                    }
+//                    GrayButton(text = "Create New Family") {
+//                        CoroutineScope(Dispatchers.IO).launch {
+//                            Log.d(LOG_TAG, "creating family")
+//                            uiState.currentUser.value?.also {
+//                                val newFamily = familyOperations.createFamily(
+//                                    it
+//                                )
+//                                uiState.setSelectedFamily(newFamily)
+//                            }
+//                        }
+//                    }
 
-                    FamilyList(
-                        FamilyListViewModel(
-                            uiState,
-                            userOperations,
-                            familyOperations,
-                            familyMemberOperations
-                        ),
-                        modifier = elementModifier
-                    )
-                    FamilyMemberList(
-                        FamilyMemberListViewModel(
-                            uiState,
-                            moneyBinOperations
-                        ), modifier = elementModifier
-                    )
+                    val isSignedIn by uiState.isSignedIn.collectAsState()
+                    if(isSignedIn) {
+                        GrayBorderToggleButton(
+                            text = "All Families",
+                            toggleState = uiState.showFamilyList
+                        ) {
+                            uiState.setShowFamilyList(!uiState.showFamilyList.value)
+                        }
+
+                        FamilyList(
+                            FamilyListViewModel(
+                                uiState,
+                                userOperations,
+                                familyOperations,
+                                familyMemberOperations
+                            ),
+                            modifier = elementModifier
+                        )
+                        FamilyMemberList(
+                            FamilyMemberListViewModel(
+                                uiState,
+                                moneyBinOperations
+                            ), modifier = elementModifier
+                        )
+                    }
                     UserList(
                         viewModel = UserListViewModel(uiState, userOperations),
                         modifier = elementModifier
@@ -113,10 +124,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun GrayButton(text: String, onClick: () -> Unit) {
-    Button(
+fun GrayBorderToggleButton(
+    text: String,
+    toggleState: StateFlow<Boolean>,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val toggle by toggleState.collectAsState()
+    OutlinedButton(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+        border = BorderStroke(
+            width = 4.dp,
+            if (toggle) Color.White else Color.DarkGray
+        ),
+        modifier = modifier
     ) {
         Text(text, color = Color.White)
     }

@@ -19,7 +19,6 @@ class FamilyMemberListViewModel(
 ) : ViewModel() {
 
     // UI State
-    val isSignedIn: StateFlow<Boolean> = uiState.isSignedIn
     val familyMembers: StateFlow<Set<FamilyMember>> = uiState.currentFamilyMembers
 
     // Event Handlers

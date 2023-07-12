@@ -30,15 +30,15 @@ fun FamilyList(
     // remembered state
     val families by viewModel.families.collectAsState()
     val selectedFamily by viewModel.selectedFamily.collectAsState()
-    val isSignedIn by viewModel.isSignedIn.collectAsState()
+    val showList by viewModel.showList.collectAsState()
 
-    if (!isSignedIn) {
+    if (selectedFamily != null && !showList) {
         return
     }
 
     Surface(
         modifier = modifier
-            .border(width = 1.dp, color = Color.Cyan)
+            .border(width = 1.dp, color = Color.Yellow)
             .padding(5.dp)
             .height(200.dp)
             .fillMaxWidth()

@@ -24,17 +24,12 @@ fun FamilyMemberList(
 
 // remembered state
     val familyMembers by viewModel.familyMembers.collectAsState()
-    val isSignedIn by viewModel.isSignedIn.collectAsState()
-
-    if (!isSignedIn) {
-        return
-    }
 
     Surface(
         modifier = modifier
-            .border(width = 1.dp, color = Color.Cyan)
+            .border(width = 1.dp, color = Color.Magenta)
             .padding(5.dp)
-            .height(200.dp)
+            .height(400.dp)
             .fillMaxWidth()
     ) {
         LazyColumn(

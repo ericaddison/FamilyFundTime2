@@ -29,8 +29,8 @@ class FamilyListViewModel(
 
     // UI State
     val user: StateFlow<User?> = uiState.currentUser
-    val isSignedIn: StateFlow<Boolean> = uiState.isSignedIn
     val selectedFamily: StateFlow<Family?> = uiState.selectedFamily
+    val showList: StateFlow<Boolean> = uiState.showFamilyList
 
     private val familiesFromUserChangeFlow = user.map {
         it?.let { realUser -> familyOperations.getFamiliesForUser(realUser) } ?: setOf()

@@ -34,7 +34,11 @@ fun UserList(viewModel: UserListViewModel, modifier: Modifier = Modifier) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(allUsers.toList()) {
+
+
+            items(
+                allUsers.toList().sortedWith(compareBy({ it.id != currentUser?.id }, { it.displayName }))
+            ) {
                 UserListItem(it, isSelf = it.id == currentUser?.id)
             }
         }
@@ -44,5 +48,5 @@ fun UserList(viewModel: UserListViewModel, modifier: Modifier = Modifier) {
 @Composable
 fun UserListItem(user: User, isSelf: Boolean, modifier: Modifier = Modifier) {
     val fontWeight = if (isSelf) FontWeight.Bold else FontWeight.Normal
-    Text("${user.displayName}, ${user.email}", fontWeight = fontWeight, modifier = modifier)
+    Text("${user.displayName}", fontWeight = fontWeight, modifier = modifier)
 }

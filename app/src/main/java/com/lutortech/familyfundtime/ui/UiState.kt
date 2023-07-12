@@ -1,9 +1,6 @@
 package com.lutortech.familyfundtime.ui
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lutortech.familyfundtime.Constants.LOG_TAG
@@ -16,8 +13,8 @@ import com.lutortech.familyfundtime.model.user.UserOperations
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -31,12 +28,14 @@ class UiState(
 
     // private flows
     private val _selectedFamily: MutableStateFlow<Family?> = MutableStateFlow(null)
+    private val _showFamilyList: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     // UI StateFlows
+    val showFamilyList: StateFlow<Boolean> = _showFamilyList.asStateFlow()
+    val selectedFamily: StateFlow<Family?> = _selectedFamily.asStateFlow()
     val currentUser: StateFlow<User?> = userOperations.currentUser()
     val isSignedIn: StateFlow<Boolean> = currentUser.map { it != null }
         .stateIn(scope = viewModelScope, started = SharingStarted.Lazily, initialValue = false)
-    val selectedFamily: StateFlow<Family?> = _selectedFamily
     val currentFamilyMembers: StateFlow<Set<FamilyMember>> = selectedFamily.map {
         Log.d(
             LOG_TAG,
@@ -65,5 +64,9 @@ class UiState(
 
     fun setSelectedFamily(family: Family?) {
         _selectedFamily.value = family
+    }
+
+    fun setShowFamilyList(show: Boolean) {
+        _showFamilyList.value = show
     }
 }

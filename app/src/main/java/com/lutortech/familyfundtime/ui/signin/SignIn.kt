@@ -2,6 +2,7 @@ package com.lutortech.familyfundtime.ui.signin
 
 import android.util.Log
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -27,10 +29,11 @@ fun SignIn(viewModel: SignInViewModel, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier
             .border(width = Dp(1f), color = Color.Cyan)
+            .fillMaxWidth()
             .padding(Dp(5f))
     ) {
         if (isSignedIn) {
-            Row{
+            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically){
                 SignOutButton(
                     onClick = { viewModel.sendEvent(SignInEvent.USER_EVENT_SIGN_OUT) },
                     modifier = modifier
